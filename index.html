@@ -6,6 +6,8 @@
     <title>CV Re-formatter</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <style>
         :root {
             --bg: #0f172a;
@@ -532,11 +534,10 @@
             }
             
             #previewArea {
-                position: absolute;
-                left: 0;
-                top: 0;
+                position: relative;
+                height: 90vh;
+                overflow-y: auto;
                 width: 100%;
-                height: 100%;
                 background: white;
                 padding: 0;
                 margin: 0;
@@ -1087,29 +1088,83 @@
                     const element = document.getElementById('previewArea');
                     if (!element) throw new Error('Preview content not found');
                     
+                    // Clone the element to avoid affecting the original
+                    const elementClone = element.cloneNode(true);
+                    
+                    // Create a temporary container for PDF generation
+                    const tempContainer = document.createElement('div');
+                    tempContainer.style.position = 'absolute';
+                    tempContainer.style.left = '-9999px';
+                    tempContainer.style.width = '210mm';
+                    tempContainer.style.padding = '20mm';
+                    tempContainer.style.background = 'white';
+                    tempContainer.style.color = 'black';
+                    tempContainer.appendChild(elementClone);
+                    document.body.appendChild(tempContainer);
+                    
+                    // Get all styles from the document
+                    const styles = document.querySelectorAll('style, link[rel="stylesheet"]');
+                    const styleText = Array.from(styles)
+                        .map(style => style.outerHTML)
+                        .join('\n');
+                    
+                    // Create a style element with all the styles
+                    const styleElement = document.createElement('style');
+                    styleElement.textContent = `
+                        @page { margin: 0; }
+                        body { margin: 0; padding: 0; }
+                        ${styleText}
+                        .cv-paper {
+                            margin: 0 !important;
+                            padding: 25mm !important;
+                            box-shadow: none !important;
+                        }
+                    `;
+                    
+                    // Add the styles to the temp container
+                    tempContainer.insertBefore(styleElement, tempContainer.firstChild);
+                    
                     const opt = {
-                        margin: 10,
+                        margin: 0,
                         filename: 'cv.pdf',
-                        image: { type: 'jpeg', quality: 0.98 },
+                        image: { 
+                            type: 'jpeg', 
+                            quality: 1.0 
+                        },
                         html2canvas: { 
                             scale: 2,
                             useCORS: true,
                             logging: true,
-                            letterRendering: true
+                            letterRendering: true,
+                            windowWidth: 1240,
+                            allowTaint: true,
+                            scrollX: 0,
+                            scrollY: 0
                         },
                         jsPDF: { 
                             unit: 'mm', 
                             format: 'a4', 
                             orientation: 'portrait' 
+                        },
+                        pagebreak: { 
+                            mode: ['avoid-all', 'css', 'legacy'] 
                         }
                     };
                     
-                    await html2pdf().set(opt).from(element).save();
-                    showNotification('PDF downloaded successfully!', true);
+                    // Generate the PDF
+                    await html2pdf()
+                        .set(opt)
+                        .from(tempContainer)
+                        .save()
+                        .then(() => {
+                            // Clean up
+                            document.body.removeChild(tempContainer);
+                            showNotification('PDF downloaded successfully!', true);
+                        });
                     
                 } catch (error) {
                     console.error('Error generating PDF:', error);
-                    showNotification('Error generating PDF. Please try again.', false);
+                    showNotification('Error generating PDF: ' + error.message, false);
                 } finally {
                     downloadBtn.disabled = false;
                     downloadBtn.innerHTML = originalBtnHTML;
