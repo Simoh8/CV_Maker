@@ -597,13 +597,25 @@ function fillFormFromJson(json) {
     }
     
     // Fill references
+    // Clear existing reference entries
+    $('referenceEntries').innerHTML = '';
+    
+    // Add reference entries from JSON
     if (json.references && json.references.length) {
-        const refText = json.references.map(ref => {
-            return `${ref.name || ''}, ${ref.email || ''}, ${ref.phone || ''}`;
-        }).join('\n');
-        $('references').value = refText;
+        json.references.forEach(ref => {
+            if (ref.name) {  // Only add if there's a name
+                addReferenceEntry({
+                    name: ref.name || '',
+                    position: ref.position || '',
+                    company: ref.company || '',
+                    phone: ref.phone || '',
+                    email: ref.email || ''
+                });
+            }
+        });
     } else {
-        $('references').value = '';
+        // Add one empty reference if none exist
+        addReferenceEntry();
     }
 }
 
@@ -639,20 +651,20 @@ function gatherData() {
         });
     });
     
-    // Gather references from textarea
+    // Gather references from input fields
     const references = [];
-    if ($('references').value) {
-        $('references').value.split('\n').forEach(line => {
-            const parts = line.split(',').map(part => part.trim());
-            if (parts.length >= 2) {
-                references.push({
-                    name: parts[0],
-                    email: parts[1] || '',
-                    phone: parts[2] || ''
-                });
-            }
+    document.querySelectorAll('#referenceEntries .entry-item').forEach(item => {
+        const name = item.querySelector('.ref-name').value.trim();
+        if (!name) return;
+        
+        references.push({
+            name: name,
+            position: item.querySelector('.ref-position').value.trim(),
+            company: item.querySelector('.ref-company').value.trim(),
+            phone: item.querySelector('.ref-phone').value.trim(),
+            email: item.querySelector('.ref-email').value.trim()
         });
-    }
+    });
     
     return {
         personal: {
@@ -674,9 +686,38 @@ function gatherData() {
 }
 
 function renderReferences(refs) {
-    if (!refs.length) return '';
-    return `<div class="section-title-cv">References</div>` +
-        refs.map(r => `<div><b>${r.name}</b> ${r.phone || ''} ${r.email || ''}</div>`).join('');
+    if (!refs || !refs.length) return '';
+    
+    const refsHtml = refs.map(ref => {
+        const parts = [];
+        if (ref.name) parts.push(`<strong style="color: inherit">${ref.name}</strong>`);
+        if (ref.position) parts.push(`<span style="color: inherit">${ref.position}</span>`);
+        if (ref.company) parts.push(`<span style="color: inherit">at ${ref.company}</span>`);
+        
+        const contact = [];
+        if (ref.phone) contact.push(`<i class="fas fa-phone" style="color: var(--accent, #7c3aed)"></i> <span style="color: var(--muted, #94a3b8)">${ref.phone}</span>`);
+        if (ref.email) contact.push(`<i class="fas fa-envelope" style="color: var(--accent, #7c3aed)"></i> <span style="color: var(--muted, #94a3b8)">${ref.email}</span>`);
+        
+        let referenceText = parts.join(', ');
+        if (contact.length > 0) {
+            referenceText += ` <span style="color: var(--muted, #94a3b8)">(${contact.join(' | ')})</span>`;
+        }
+        
+        return `<div class="reference" style="color: var(--text-color, #1f2937)">${referenceText}</div>`;
+    }).join('');
+    
+    if (!refsHtml) return '';
+    
+    return `
+        <div class="section">
+            <div class="section-title-cv">
+                <i class="fas fa-user-friends"></i> References
+            </div>
+            <div class="references">
+                ${refsHtml}
+            </div>
+        </div>
+    `;
 }
 
 function renderTemplateA(d) {
@@ -864,6 +905,67 @@ function updatePreview() {
     
     $('previewArea').innerHTML = html;
 }
+
+// Add reference entry
+document.addEventListener('click', e => {
+    if (e.target && (e.target.id === 'addReference' || e.target.closest('#addReference'))) {
+        e.preventDefault();
+        addReferenceEntry();
+    } else if (e.target && e.target.closest('.remove-reference')) {
+        e.preventDefault();
+        e.target.closest('.entry-item').remove();
+        updatePreview();
+    }
+});
+
+function addReferenceEntry(data = {}) {
+    const container = $('referenceEntries');
+    const id = 'ref-' + Date.now();
+    const entry = document.createElement('div');
+    entry.className = 'entry-item';
+    entry.dataset.id = id;
+    entry.innerHTML = `
+        <div class="entry-header">
+            <span>Reference #${container.children.length + 1}</span>
+            <button type="button" class="remove-btn remove-reference">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <input type="text" class="ref-name" placeholder="Name" value="${data.name || ''}">
+            </div>
+            <div class="form-group">
+                <input type="text" class="ref-position" placeholder="Position / Title" value="${data.position || ''}">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <input type="text" class="ref-company" placeholder="Company" value="${data.company || ''}">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <input type="tel" class="ref-phone" placeholder="Phone" value="${data.phone || ''}">
+            </div>
+            <div class="form-group">
+                <input type="email" class="ref-email" placeholder="Email" value="${data.email || ''}">
+            </div>
+        </div>
+    `;
+    container.appendChild(entry);
+    
+    // Add event listeners to update preview on input
+    entry.querySelectorAll('input').forEach(input => {
+        input.addEventListener('input', updatePreview);
+    });
+}
+
+// Add a default reference when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    // Add one empty reference by default
+    addReferenceEntry();
+});
 
 // Initialize with empty form
 updatePreview();

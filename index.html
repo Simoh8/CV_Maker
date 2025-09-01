@@ -148,6 +148,10 @@
                             <i class="fas fa-plus-circle"></i>
                             <span>Additional</span>
                         </div>
+                        <div class="tab-button" data-tab="references">
+                            <i class="fas fa-user-friends"></i>
+                            <span>References</span>
+                        </div>
                     </div>
 
                     <!-- Experience Tab -->
@@ -199,9 +203,17 @@
                             <i class="fas fa-plus"></i>
                             Add Custom Section
                         </button>
-                        
-                        <label>References (one per line: Name, Contact)</label>
-                        <textarea id="references" placeholder="John Doe, john@example.com, +1234567890&#10;Jane Smith, jane@example.com, +0987654321"></textarea>
+                    </div>
+
+                    <!-- References Tab -->
+                    <div class="tab-content" id="references-tab">
+                        <div id="referenceEntries">
+                            <!-- Reference entries will be added here -->
+                        </div>
+                        <button class="small" id="addReference">
+                            <i class="fas fa-plus"></i>
+                            Add Reference
+                        </button>
                     </div>
                 </div>
 
