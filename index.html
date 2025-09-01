@@ -830,42 +830,62 @@
         });
 
         // File upload handling
-        const fileUploadArea = $('#fileUploadArea');
-        const fileInput = $('#fileInput');
-        const fileName = $('#fileName');
+        const fileUploadArea = document.getElementById('fileUploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        const uploadBtn = document.getElementById('uploadBtn');
 
-        fileUploadArea.addEventListener('click', () => {
-            fileInput.click();
-        });
+        // Make sure elements exist before adding event listeners
+        if (fileUploadArea && fileInput && fileName && uploadBtn) {
+            fileUploadArea.addEventListener('click', () => {
+                fileInput.click();
+            });
 
-        fileUploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            fileUploadArea.style.borderColor = 'var(--accent)';
-            fileUploadArea.style.backgroundColor = 'rgba(124, 58, 237, 0.1)';
-        });
+            fileUploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                fileUploadArea.style.borderColor = 'var(--accent)';
+                fileUploadArea.style.backgroundColor = 'rgba(124, 58, 237, 0.1)';
+            });
 
-        fileUploadArea.addEventListener('dragleave', () => {
-            fileUploadArea.style.borderColor = 'var(--input-border)';
-            fileUploadArea.style.backgroundColor = 'rgba(255, 255, 255, 0.03)';
-        });
+            fileUploadArea.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                fileUploadArea.style.borderColor = 'var(--input-border)';
+                fileUploadArea.style.backgroundColor = 'rgba(255, 255, 255, 0.03)';
+            });
 
-        fileUploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            fileUploadArea.style.borderColor = 'var(--input-border)';
-            fileUploadArea.style.backgroundColor = 'rgba(255, 255, 255, 0.03)';
-            
-            if (e.dataTransfer.files.length) {
-                fileInput.files = e.dataTransfer.files;
-                updateFileName();
-            }
-        });
+            fileUploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                fileUploadArea.style.borderColor = 'var(--input-border)';
+                fileUploadArea.style.backgroundColor = 'rgba(255, 255, 255, 0.03)';
+                
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    fileInput.files = e.dataTransfer.files;
+                    updateFileName();
+                }
+            });
 
-        fileInput.addEventListener('change', updateFileName);
+            fileInput.addEventListener('change', updateFileName);
+        } else {
+            console.error('One or more file upload elements not found');
+        }
 
         function updateFileName() {
-            if (fileInput.files.length) {
-                fileName.textContent = fileInput.files[0].name;
+            if (!fileInput || !fileName) return;
+            
+            if (fileInput.files && fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                fileName.textContent = file.name;
                 fileUploadArea.style.borderColor = 'var(--success)';
+                
+                // Validate file type
+                const ext = file.name.split('.').pop().toLowerCase();
+                if (ext !== 'pdf' && ext !== 'docx') {
+                    showNotification('Only PDF and DOCX files are allowed', false);
+                    fileUploadArea.style.borderColor = 'var(--error)';
+                }
             } else {
                 fileName.textContent = 'No file selected';
                 fileUploadArea.style.borderColor = 'var(--input-border)';
@@ -972,8 +992,11 @@
         }
 
         // Upload functionality
-        $('uploadBtn').addEventListener('click', async () => {
-            const f = $('fileInput').files[0];
+        document.getElementById('uploadBtn').addEventListener('click', async () => {
+            const fileInput = document.getElementById('fileInput');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const f = fileInput.files[0];
+            
             if (!f) {
                 showNotification('Please select a file first', false);
                 return;
@@ -981,8 +1004,9 @@
             
             const form = new FormData();
             form.append('file', f);
-            $('uploadBtn').disabled = true;
-            $('uploadBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Parsing...';
+            
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Parsing...';
             
             try {
                 const res = await fetch('/api/parse', {
@@ -991,7 +1015,8 @@
                 });
                 
                 if (!res.ok) {
-                    throw new Error(`Server returned ${res.status}: ${res.statusText}`);
+                    const errorData = await res.json().catch(() => ({}));
+                    throw new Error(errorData.error || `HTTP error! status: ${res.status}`);
                 }
                 
                 const json = await res.json();
@@ -1002,16 +1027,16 @@
                 document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
                 document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                 document.querySelector('[data-tab="create"]').classList.add('active');
-                $('#create-tab').classList.add('active');
+                document.getElementById('create-tab').classList.add('active');
                 
                 showNotification('CV parsed successfully! You can now edit it.', true);
                 
             } catch (err) {
                 console.error('Upload error:', err);
-                showNotification('Error parsing file. Please try again.', false);
+                showNotification(`Error: ${err.message || 'Failed to parse file. Please try again.'}`, false);
             } finally {
-                $('uploadBtn').disabled = false;
-                $('uploadBtn').innerHTML = '<i class="fas fa-paragraph"></i> Parse CV';
+                uploadBtn.disabled = false;
+                uploadBtn.innerHTML = '<i class="fas fa-paragraph"></i> Parse CV';
             }
         });
 

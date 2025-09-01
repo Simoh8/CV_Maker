@@ -357,29 +357,61 @@ def list_cvs():
 # ---------- Flask endpoints ----------
 @app.route('/api/parse', methods=['POST'])
 def parse_file():
+    print("\n=== New Upload Request ===")
+    print(f"Request files: {request.files}")
+    
     if 'file' not in request.files:
+        print("Error: No file part in the request")
         return jsonify({'error': 'no file provided'}), 400
+        
     f = request.files['file']
+    print(f"Received file: {f.filename}")
+    
+    if f.filename == '':
+        print("Error: No selected file")
+        return jsonify({'error': 'no file selected'}), 400
+        
     filename = secure_filename(f.filename or 'uploaded')
     ext = filename.split('.')[-1].lower()
+    print(f"File extension: {ext}")
+    
     if ext not in ALLOWED:
+        print(f"Error: Invalid file type: {ext}")
         return jsonify({'error': 'invalid file type'}), 400
-    content = f.read()
-    text = ''
+        
     try:
+        content = f.read()
+        print(f"File size: {len(content)} bytes")
+        text = ''
+        
         if ext == 'pdf':
+            print("Processing PDF file...")
             tmp = os.path.join(UPLOAD_DIR, filename)
             with open(tmp, 'wb') as fh:
                 fh.write(content)
             text = extract_text(tmp)
             os.remove(tmp)
+            print("PDF processing complete")
         elif ext == 'docx':
+            print("Processing DOCX file...")
             text = text_from_docx_bytes(content)
+            print("DOCX processing complete")
+            
+        print(f"Extracted text length: {len(text)} characters")
+        jsonv = heuristics_to_json(text)
+        print("Successfully parsed file")
+        return jsonify(jsonv)
+        
     except Exception as e:
-        return jsonify({'error': 'parsing failed', 'detail': str(e)}), 500
-
-    jsonv = heuristics_to_json(text)
-    return jsonify(jsonv)
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"Error processing file: {str(e)}")
+        print(f"Traceback: {error_trace}")
+        return jsonify({
+            'error': 'parsing failed', 
+            'detail': str(e),
+            'traceback': error_trace
+        }), 500
 
 @app.route('/')
 def index():
