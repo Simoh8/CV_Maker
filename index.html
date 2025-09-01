@@ -1074,101 +1074,108 @@
             showNotification('Preview updated', true);
         });
 
-        // Download as PDF functionality
+        // Download as PDF functionality using browser's print
         function handlePdfDownload() {
             const downloadBtn = document.getElementById('downloadBtn');
             if (!downloadBtn) return;
 
-            downloadBtn.addEventListener('click', async () => {
-                const originalBtnHTML = downloadBtn.innerHTML;
-                try {
-                    downloadBtn.disabled = true;
-                    downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating PDF...';
-                    
-                    const element = document.getElementById('previewArea');
-                    if (!element) throw new Error('Preview content not found');
-                    
-                    // Clone the element to avoid affecting the original
-                    const elementClone = element.cloneNode(true);
-                    
-                    // Create a temporary container for PDF generation
-                    const tempContainer = document.createElement('div');
-                    tempContainer.style.position = 'absolute';
-                    tempContainer.style.left = '-9999px';
-                    tempContainer.style.width = '210mm';
-                    tempContainer.style.padding = '20mm';
-                    tempContainer.style.background = 'white';
-                    tempContainer.style.color = 'black';
-                    tempContainer.appendChild(elementClone);
-                    document.body.appendChild(tempContainer);
-                    
-                    // Get all styles from the document
-                    const styles = document.querySelectorAll('style, link[rel="stylesheet"]');
-                    const styleText = Array.from(styles)
-                        .map(style => style.outerHTML)
-                        .join('\n');
-                    
-                    // Create a style element with all the styles
-                    const styleElement = document.createElement('style');
-                    styleElement.textContent = `
-                        @page { margin: 0; }
-                        body { margin: 0; padding: 0; }
-                        ${styleText}
-                        .cv-paper {
-                            margin: 0 !important;
-                            padding: 25mm !important;
-                            box-shadow: none !important;
-                        }
-                    `;
-                    
-                    // Add the styles to the temp container
-                    tempContainer.insertBefore(styleElement, tempContainer.firstChild);
-                    
-                    const opt = {
-                        margin: 0,
-                        filename: 'cv.pdf',
-                        image: { 
-                            type: 'jpeg', 
-                            quality: 1.0 
-                        },
-                        html2canvas: { 
-                            scale: 2,
-                            useCORS: true,
-                            logging: true,
-                            letterRendering: true,
-                            windowWidth: 1240,
-                            allowTaint: true,
-                            scrollX: 0,
-                            scrollY: 0
-                        },
-                        jsPDF: { 
-                            unit: 'mm', 
-                            format: 'a4', 
-                            orientation: 'portrait' 
-                        },
-                        pagebreak: { 
-                            mode: ['avoid-all', 'css', 'legacy'] 
-                        }
-                    };
-                    
-                    // Generate the PDF
-                    await html2pdf()
-                        .set(opt)
-                        .from(tempContainer)
-                        .save()
-                        .then(() => {
-                            // Clean up
-                            document.body.removeChild(tempContainer);
-                            showNotification('PDF downloaded successfully!', true);
-                        });
-                    
-                } catch (error) {
-                    console.error('Error generating PDF:', error);
-                    showNotification('Error generating PDF: ' + error.message, false);
-                } finally {
-                    downloadBtn.disabled = false;
-                    downloadBtn.innerHTML = originalBtnHTML;
+            downloadBtn.addEventListener('click', () => {
+                const previewArea = document.getElementById('previewArea');
+                if (!previewArea) {
+                    showNotification('Preview content not found', false);
+                    return;
                 }
+
+                // Create a new window for printing
+                const printWindow = window.open('', '_blank');
+                if (!printWindow) {
+                    showNotification('Could not open print window. Please allow popups for this site.', false);
+                    return;
+                }
+
+                // Get the preview content
+                const previewContent = previewArea.innerHTML;
+                
+                // Get all styles from the main document
+                const styles = Array.from(document.styleSheets)
+                    .map(sheet => {
+                        try {
+                            return Array.from(sheet.cssRules || [])
+                                .map(rule => rule.cssText)
+                                .join('\n');
+                        } catch (e) {
+                            return '';
+                        }
+                    })
+                    .join('\n');
+
+                // Create the print document
+                printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>CV - Print</title>
+                        <meta charset="utf-8">
+                        <style>
+                            /* Include all original styles */
+                            ${styles}
+                            
+                            /* Print-specific overrides */
+                            @page { 
+                                size: A4;
+                                margin: 0;
+                            }
+                            
+                            body, html {
+                                margin: 0 !important;
+                                padding: 0 !important;
+                                -webkit-print-color-adjust: exact !important;
+                                print-color-adjust: exact !important;
+                                background: white !important;
+                            }
+                            
+                            #previewArea {
+                                width: 100% !important;
+                                min-height: 100% !important;
+                                margin: 0 !important;
+                                padding: 15mm !important;
+                                box-sizing: border-box;
+                                background: white !important;
+                                box-shadow: none !important;
+                                position: relative;
+                                left: 0 !important;
+                                top: 0 !important;
+                                transform: none !important;
+                            }
+                            
+                            /* Ensure all text is black for printing */
+                            * {
+                                color: inherit !important;
+                            }
+                            
+                            /* Ensure the CV paper takes full page */
+                            .cv-paper {
+                                width: 100% !important;
+                                min-height: 100% !important;
+                                margin: 0 !important;
+                                padding: 20mm !important;
+                                box-sizing: border-box;
+                                background: white !important;
+                                box-shadow: none !important;
+                            }
+                            
+                            /* Fix any elements that might be hidden */
+                            .cv-paper * {
+                                visibility: visible !important;
+                            }
+                        </style>
+                    </head>
+                    <body onload="window.print(); window.close();">
+                        <div class="cv-paper">${previewContent}</div>
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
             });
         }
 
