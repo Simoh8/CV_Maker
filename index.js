@@ -317,6 +317,35 @@ $('addCustomSection').addEventListener('click', () => {
     $('customEntries').insertAdjacentHTML('beforeend', entryHtml);
 });
 
+
+// Reference entry management
+$('addReference').addEventListener('click', () => {
+    const entryId = Date.now();
+    const entryHtml = `
+        <div class="entry-item" id="ref-${entryId}">
+            <h4><i class="fas fa-user-friends"></i> Reference Entry</h4>
+            <input type="text" placeholder="Name" class="ref-name">
+            <input type="text" placeholder="Position" class="ref-position">
+            <input type="text" placeholder="Company" class="ref-company">
+            <input type="email" placeholder="Email" class="ref-email">
+            <input type="tel" placeholder="Phone" class="ref-phone">
+            <div class="entry-controls">
+                <button class="small btn-ghost" onclick="removeEntry('ref-${entryId}')">
+                    <i class="fas fa-trash"></i>
+                    Remove
+                </button>
+            </div>
+        </div>
+    `;
+    $('referenceEntries').insertAdjacentHTML('beforeend', entryHtml);
+    
+    // Add input event listeners to the new reference entry
+    const newEntry = document.getElementById(`ref-${entryId}`);
+    newEntry.querySelectorAll('input').forEach(input => {
+        input.addEventListener('input', updatePreview);
+    });
+});
+
 // Remove entry function
 function removeEntry(id) {
     $(id).remove();
@@ -1107,65 +1136,7 @@ function updatePreview() {
     $('previewArea').innerHTML = html;
 }
 
-// Function to add a new reference entry
-function addReferenceEntry(data = {}) {
-    const entryId = Date.now();
-    const entryHtml = `
-        <div class="entry-item" id="ref-${entryId}">
-            <h4><i class="fas fa-user-friends"></i> Reference Entry</h4>
-            <input type="text" placeholder="Name" class="ref-name" value="${data.name || ''}">
-            <input type="text" placeholder="Position" class="ref-position" value="${data.position || ''}">
-            <input type="text" placeholder="Company" class="ref-company" value="${data.company || ''}">
-            <input type="email" placeholder="Email" class="ref-email" value="${data.email || ''}">
-            <input type="tel" placeholder="Phone" class="ref-phone" value="${data.phone || ''}">
-            <div class="entry-actions">
-                <button type="button" class="small remove-btn remove-reference">
-                    <i class="fas fa-trash"></i> Remove
-                </button>
-            </div>
-        </div>
-    `;
-    $('referenceEntries').insertAdjacentHTML('beforeend', entryHtml);
-    
-    // Add event listeners to the new inputs
-    const newEntry = document.getElementById(`ref-${entryId}`);
-    newEntry.querySelectorAll('input').forEach(input => {
-        input.addEventListener('input', updatePreview);
-    });
-    
-    // Update preview immediately
-    updatePreview();
-    
-    return newEntry;
-}
 
-// Reference entry management
-$('addReference').addEventListener('click', () => {
-    const entryId = Date.now();
-    const entryHtml = `
-        <div class="entry-item" id="ref-${entryId}">
-            <h4><i class="fas fa-user-friends"></i> Reference Entry</h4>
-            <input type="text" placeholder="Name" class="ref-name">
-            <input type="text" placeholder="Position" class="ref-position">
-            <input type="text" placeholder="Company" class="ref-company">
-            <input type="email" placeholder="Email" class="ref-email">
-            <input type="tel" placeholder="Phone" class="ref-phone">
-            <div class="entry-controls">
-                <button class="small btn-ghost" onclick="removeEntry('ref-${entryId}')">
-                    <i class="fas fa-trash"></i>
-                    Remove
-                </button>
-            </div>
-        </div>
-    `;
-    $('referenceEntries').insertAdjacentHTML('beforeend', entryHtml);
-    
-    // Add event listeners to the new inputs
-    const newEntry = document.getElementById(`ref-${entryId}`);
-    newEntry.querySelectorAll('input').forEach(input => {
-        input.addEventListener('input', updatePreview);
-    });
-});
 
 // Add a default reference when the page loads
 document.addEventListener('DOMContentLoaded', () => {
