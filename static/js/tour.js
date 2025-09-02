@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
             title: 'Personal Information',
             text: 'Enter your personal details like name, email, and contact information here.',
             attachTo: {
-                element: '#name',
+                element: '#personalInfoTab_1',
                 on: 'bottom'
             },
             buttons: [
