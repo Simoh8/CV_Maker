@@ -1,7 +1,11 @@
 from flask import Flask, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
-import os, re, json
+import os, re, json, base64, datetime, requests
 from io import BytesIO
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # PDF/DOCX libs
 from pdfminer.high_level import extract_text
@@ -421,6 +425,153 @@ def index():
 def static_files(path):
     return send_from_directory('.', path)
 
+# M-Pesa API Configuration
+MPESA_ENV = os.getenv('MPESA_ENVIRONMENT', 'sandbox')
+MPESA_CONSUMER_KEY = os.getenv('MPESA_CONSUMER_KEY')
+MPESA_CONSUMER_SECRET = os.getenv('MPESA_CONSUMER_SECRET')
+MPESA_PASSKEY = os.getenv('MPESA_PASSKEY')
+MPESA_SHORTCODE = os.getenv('MPESA_SHORTCODE')
+
+# M-Pesa API Endpoints
+if MPESA_ENV == 'production':
+    base_url = 'https://api.safaricom.co.ke'
+else:
+    base_url = 'https://sandbox.safaricom.co.ke'
+
+def get_access_token():
+    """Generate access token for M-Pesa API"""
+    url = f"{base_url}/oauth/v1/generate?grant_type=client_credentials"
+    auth = (MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET)
+    try:
+        response = requests.get(url, auth=auth, timeout=30)
+        response.raise_for_status()
+        return response.json().get('access_token')
+    except requests.exceptions.RequestException as e:
+        print(f"Error getting access token: {e}")
+        return None
+
+def generate_password():
+    """Generate password for M-Pesa API"""
+    timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+    password_str = f"{MPESA_SHORTCODE}{MPESA_PASSKEY}{timestamp}"
+    return base64.b64encode(password_str.encode()).decode()
+
+@app.route('/api/mpesa/stkpush', methods=['POST'])
+def stk_push():
+    """Initiate STK push to customer's phone"""
+    try:
+        data = request.get_json()
+        phone = data.get('phone')
+        amount = data.get('amount')
+        
+        # Validate input
+        if not phone or not amount:
+            return jsonify({
+                'success': False,
+                'message': 'Phone number and amount are required'
+            }), 400
+            
+        # Format phone number (ensure it starts with 254)
+        if phone.startswith('0'):
+            phone = '254' + phone[1:]
+        elif phone.startswith('+'):
+            phone = phone[1:]
+        elif not phone.startswith('254'):
+            phone = '254' + phone
+            
+        # Ensure amount is a valid number
+        try:
+            amount = int(float(amount))
+            if amount < 1:
+                raise ValueError("Amount must be at least 1 KES")
+        except (ValueError, TypeError):
+            return jsonify({
+                'success': False,
+                'message': 'Please enter a valid amount'
+            }), 400
+            
+        # Get access token
+        access_token = get_access_token()
+        if not access_token:
+            return jsonify({
+                'success': False,
+                'message': 'Failed to authenticate with M-Pesa API'
+            }), 500
+            
+        # Prepare STK push request
+        url = f"{base_url}/mpesa/stkpush/v1/processrequest"
+        headers = {
+            'Authorization': f'Bearer {access_token}',
+            'Content-Type': 'application/json'
+        }
+        
+        timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+        password = base64.b64encode(f"{MPESA_SHORTCODE}{MPESA_PASSKEY}{timestamp}".encode()).decode()
+        
+        payload = {
+            "BusinessShortCode": MPESA_SHORTCODE,
+            "Password": password,
+            "Timestamp": timestamp,
+            "TransactionType": "CustomerPayBillOnline",
+            "Amount": amount,
+            "PartyA": phone,
+            "PartyB": MPESA_SHORTCODE,
+            "PhoneNumber": phone,
+            "CallBackURL": f"{request.host_url}api/mpesa/callback",
+            "AccountReference": "CVMAKER",
+            "TransactionDesc": "Donation for CV Maker"
+        }
+        
+        # Send STK push request
+        response = requests.post(url, json=payload, headers=headers, timeout=30)
+        response_data = response.json()
+        
+        if response.status_code == 200 and 'ResponseCode' in response_data and response_data['ResponseCode'] == '0':
+            return jsonify({
+                'success': True,
+                'message': 'Payment request sent successfully. Please check your phone to complete the payment.',
+                'checkoutRequestID': response_data.get('CheckoutRequestID'),
+                'merchantRequestID': response_data.get('MerchantRequestID')
+            })
+        else:
+            error_message = response_data.get('errorMessage', 'Failed to initiate payment')
+            return jsonify({
+                'success': False,
+                'message': error_message
+            }), 400
+            
+    except Exception as e:
+        print(f"STK Push Error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'An error occurred while processing your request. Please try again.'
+        }), 500
+
+@app.route('/api/mpesa/callback', methods=['POST'])
+def mpesa_callback():
+    """Handle M-Pesa STK push callback"""
+    try:
+        callback_data = request.get_json()
+        print("M-Pesa Callback Received:", json.dumps(callback_data, indent=2))
+        
+        # Process the callback data as needed
+        # You can save this to a database or trigger other actions
+        
+        return jsonify({
+            'ResultCode': 0,
+            'ResultDesc': 'Callback processed successfully'
+        })
+    except Exception as e:
+        print(f"Callback Error: {str(e)}")
+        return jsonify({
+            'ResultCode': 1,
+            'ResultDesc': 'Failed to process callback'
+        }), 500
+
 if __name__ == '__main__':
+    # Create uploads directory if it doesn't exist
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    
+    # Start the Flask application
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="0.0.0.0", port=port, debug=(MPESA_ENV != 'production'))

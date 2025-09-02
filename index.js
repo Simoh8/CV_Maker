@@ -83,21 +83,27 @@ if (donationForm) {
 
 // Simulate STK Push (replace with actual API call to your backend)
 async function simulateStkPush(phoneNumber, amount) {
-    // This is a simulation - in a real app, you would make an API call to your backend
-    // which would then call the M-Pesa STK Push API with proper authentication
-    console.log(`Simulating STK Push to ${phoneNumber} for KES ${amount}`);
-    
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // For demo purposes, we'll return a success response
-    // In a real implementation, this would be the response from your backend
-    return {
-        success: true,
-        message: 'STK Push initiated successfully',
-        checkoutRequestID: 'ws_CO_0209202500000000000000000001',
-        merchantRequestID: '0000-0000000-00'
-    };
+    try {
+        const response = await fetch('/api/mpesa/stkpush', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                phone: phoneNumber,
+                amount: amount
+            })
+        });
+        
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Payment error:', error);
+        return {
+            success: false,
+            message: 'Failed to connect to payment service'
+        };
+    }
 }
 
 function showStatus(message, type = 'info') {
