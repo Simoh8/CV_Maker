@@ -1,0 +1,142 @@
+/* Shepherd.js Tour Styling */
+/* Make sure the tour doesn't block interactions */
+.shepherd-modal-overlay-container {
+    pointer-events: none !important;
+}
+
+.shepherd-modal-overlay-container .shepherd-modal-overlay {
+    pointer-events: none;
+}
+
+/* Highlight style for tour targets */
+.tour-highlight {
+    position: relative;
+    z-index: 9998;
+    box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    pointer-events: auto !important;
+}
+
+.shepherd-element {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    max-width: 350px;
+    font-family: 'Inter', sans-serif;
+    z-index: 10000;
+    background: white;
+    border: 1px solid #e5e7eb;
+}
+
+.shepherd-header {
+    background: #4f46e5;
+    border-radius: 10px 10px 0 0;
+    padding: 1em;
+    position: relative;
+}
+
+.shepherd-title {
+    color: white;
+    font-weight: 600;
+    margin: 0;
+    font-size: 1.1em;
+}
+
+.shepherd-text {
+    padding: 1.5em;
+    color: #4a5568;
+    line-height: 1.5;
+    font-size: 0.95em;
+}
+
+.shepherd-footer {
+    padding: 0 1.5em 1.5em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.shepherd-button {
+    padding: 0.5em 1.2em;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 0.9em;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: none;
+    font-family: 'Inter', sans-serif;
+}
+
+.shepherd-button.shepherd-button-secondary {
+    background: #f3f4f6;
+    color: #4b5563;
+}
+
+.shepherd-button.shepherd-button-secondary:hover {
+    background: #e5e7eb;
+}
+
+.shepherd-button.shepherd-button-primary {
+    background: #4f46e5;
+    color: white;
+}
+
+.shepherd-button.shepherd-button-primary:hover {
+    background: #4338ca;
+}
+
+.shepherd-cancel-icon {
+    color: white;
+    font-size: 1.2em;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.shepherd-cancel-icon:hover {
+    color: #e5e7eb;
+}
+
+/* Make the tour more visible on mobile */
+@media (max-width: 768px) {
+    .shepherd-element {
+        max-width: 90%;
+        margin: 0 auto;
+    }
+    
+    .shepherd-text {
+        font-size: 1em;
+    }
+    
+    .shepherd-footer {
+        flex-direction: column;
+        gap: 0.5em;
+    }
+    
+    .shepherd-button {
+        width: 100%;
+        margin: 0.2em 0;
+    }
+}
+
+/* Style for the tour button in header */
+#startTour {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    padding: 0.5em 1em;
+    border-radius: 6px;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    color: #4b5563;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#startTour:hover {
+    background: #e5e7eb;
+    color: #1f2937;
+}
+
+#startTour i {
+    font-size: 1.1em;
+}

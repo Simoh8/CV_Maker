@@ -233,8 +233,8 @@ button:hover {
 
 .btn-ghost {
     background: transparent;
-    border: 1px solid var(--input-border);
-    color: var(--muted);
+    border: 1px solid var(--accent);
+    color: var(--accent);
 }
 
 .btn-ghost:hover {

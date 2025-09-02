@@ -132,6 +132,236 @@ function closeModal() {
     }, 300); // Match this with the CSS transition duration
 }
 
+// Initialize tour
+function initTour() {
+    const tour = new Shepherd.Tour({
+        useModalOverlay: true,
+        defaultStepOptions: {
+            cancelIcon: {
+                enabled: true
+            },
+            classes: 'shepherd-theme-arrows',
+            scrollTo: { behavior: 'smooth', block: 'center' },
+            modalOverlayOpeningPadding: 8
+        }
+    });
+
+    // Step 1: Welcome with choice
+    tour.addStep({
+        id: 'welcome',
+        text: 'Welcome to CV Re-formatter! Would you like to upload an existing CV or create a new one from scratch?',
+        buttons: [
+            {
+                text: 'Upload CV',
+                action: function() {
+                    // Set user choice
+                    window.userChoice = 'upload';
+                    // Skip to upload step
+                    tour.show('upload');
+                },
+                classes: 'shepherd-button-primary'
+            },
+            {
+                text: 'Create New',
+                action: function() {
+                    // Set user choice
+                    window.userChoice = 'create';
+                    tour.show('personal-info');
+                },
+                classes: 'shepherd-button-secondary'
+            }
+        ]
+    });
+
+    // Step 2: Upload CV (only shown if user chooses to upload)
+    tour.addStep({
+        id: 'upload',
+        title: 'Upload Your CV',
+        text: 'Click the "Upload CV" button to select your existing CV file (PDF, DOCX, or TXT). We\'ll help you import your information.',
+        attachTo: {
+            element: '#uploadBtn',
+            on: 'bottom'
+        },
+        beforeShowPromise: function() {
+            return window.userChoice === 'upload' ? Promise.resolve() : Promise.reject('skip');
+        },
+        buttons: [
+            {
+                text: 'Back',
+                action: tour.back
+            },
+            {
+                text: 'Next',
+                action: function() {
+                    tour.show('review-upload');
+                }
+            }
+        ]
+    });
+
+    // Step 2.5: Review Uploaded CV
+    tour.addStep({
+        id: 'review-upload',
+        title: 'Review Your CV',
+        text: 'We\'ve imported your CV! Please review the information and make any necessary updates.',
+        attachTo: {
+            element: '#personalInfo',
+            on: 'bottom'
+        },
+        beforeShowPromise: function() {
+            return window.userChoice === 'upload' ? Promise.resolve() : Promise.reject('skip');
+        },
+        buttons: [
+            {
+                text: 'Back',
+                action: tour.back
+            },
+            {
+                text: 'Continue',
+                action: function() {
+                    tour.show('preview');
+                }
+            }
+        ]
+    });
+
+    // Step 3: Personal Information (shown for both paths, but with different text)
+    const personalInfoText = window.userChoice === 'upload' 
+        ? 'Let\'s verify your personal information. Check that everything looks correct and make any updates needed.'
+        : 'Let\'s start by filling in your personal information. This will appear at the top of your CV.';
+    tour.addStep({
+        id: 'personal-info',
+        title: 'Personal Information',
+        text: personalInfoText,
+        attachTo: {
+            element: '#personalInfo',
+            on: 'bottom'
+        },
+        buttons: [
+            {
+                text: 'Back',
+                action: tour.back
+            },
+            {
+                text: 'Next',
+                action: tour.next
+            }
+        ]
+    });
+
+    // Step 4: Experience Section
+    tour.addStep({
+        id: 'experience',
+        title: 'Work Experience',
+        text: 'Add your work history. Click the + button to add multiple positions.',
+        attachTo: {
+            element: '#experience-tab',
+            on: 'bottom'
+        },
+        buttons: [
+            {
+                text: 'Back',
+                action: tour.back
+            },
+            {
+                text: 'Next',
+                action: tour.next
+            }
+        ]
+    });
+
+    // Step 5: Education Section
+    tour.addStep({
+        id: 'education',
+        title: 'Education',
+        text: 'Add your educational background. Include your degrees and certifications here.',
+        attachTo: {
+            element: '#education-tab',
+            on: 'bottom'
+        },
+        buttons: [
+            {
+                text: 'Back',
+                action: tour.back
+            },
+            {
+                text: 'Next',
+                action: tour.next
+            }
+        ]
+    });
+
+    // Step 6: Skills Section
+    tour.addStep({
+        id: 'skills',
+        title: 'Skills',
+        text: 'List your key skills. These will be displayed as tags on your CV.',
+        attachTo: {
+            element: '#skills-tab',
+            on: 'bottom'
+        },
+        buttons: [
+            {
+                text: 'Back',
+                action: tour.back
+            },
+            {
+                text: 'Next',
+                action: tour.next
+            }
+        ]
+    });
+
+    // Step 7: Preview & Download
+    tour.addStep({
+        id: 'preview',
+        title: 'Preview & Download',
+        text: 'Preview your CV in real-time. When you\'re happy, download it as a PDF or save your progress.',
+        attachTo: {
+            element: '#previewBtn',
+            on: 'top'
+        },
+        buttons: [
+            {
+                text: 'Back',
+                action: tour.back
+            },
+            {
+                text: 'Finish',
+                action: tour.next
+            }
+        ]
+    });
+
+    // Start the tour when the button is clicked
+    $('startTour').addEventListener('click', () => {
+        // Check if it's the user's first visit
+        if (!localStorage.getItem('hasSeenTour')) {
+            localStorage.setItem('hasSeenTour', 'true');
+        }
+        tour.start();
+    });
+
+    // Check if it's the user's first visit and start tour automatically
+    if (!localStorage.getItem('hasSeenTour')) {
+        setTimeout(() => {
+            tour.start();
+            localStorage.setItem('hasSeenTour', 'true');
+        }, 1000);
+    }
+}
+
+// Initialize the tour when the DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    initTour();
+    
+    // Add one empty reference by default if in the references tab
+    const referencesTab = document.querySelector('.tab-button[data-tab="references"]');
+    if (referencesTab && $('referenceEntries').children.length === 0) {
+        $('addReference').click();
+    }
+});
+
 // Initialize tab functionality
 document.querySelectorAll('.tab-button').forEach(button => {
     button.addEventListener('click', () => {

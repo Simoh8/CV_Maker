@@ -10,13 +10,25 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
  
     <link rel="stylesheet" href="index.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Shepherd.js for tour -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/shepherd.js@10.0.1/dist/css/shepherd.css"/>
+    <link rel="stylesheet" href="static/css/tour.css">
+    <script src="https://cdn.jsdelivr.net/npm/shepherd.js@10.0.1/dist/js/shepherd.min.js"></script>
 
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1><i class="fas fa-file-alt"></i> CV Re-formatter</h1>
-            <p>Upload and parse your existing CV or create a new professional resume from scratch</p>
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <div>
+                    <h1><i class="fas fa-file-alt"></i> CV Re-formatter</h1>
+                    <p>Upload and parse your existing CV or create a new professional resume from scratch</p>
+                </div>
+                <button id="startTour" class="btn-ghost" style="margin-left: 20px; white-space: nowrap;">
+                    <i class="fas fa-question-circle"></i> Take a Tour
+                </button>
+            </div>
         </div>
         
         <div class="grid">
@@ -294,6 +306,6 @@
     </div>
 
     <script src="index.js"></script>
-
+    <script src="tour.js"></script>
 </body>
 </html>
