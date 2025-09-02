@@ -1,56 +1,232 @@
-/* Shepherd.js Tour Styling */
-/* Celebration Animation */
-@keyframes fadeOut {
-    0% { opacity: 0; transform: scale(0.5); }
-    20% { opacity: 1; transform: scale(1.1); }
-    80% { opacity: 1; transform: scale(1.1); }
-    100% { opacity: 0; transform: scale(1.2); }
+/* Modern Tour Styling */
+:root {
+    --primary-color: #7c3aed;
+    --primary-light: #a78bfa;
+    --secondary-color: #ec4899;
+    --accent-color: #f59e0b;
+    --success-color: #10b981;
+    --text-color: #1f2937;
+    --text-light: #6b7280;
+    --bg-color: #ffffff;
+    --border-radius: 14px;
+    --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --gradient: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
 }
 
-/* Make sure the tour doesn't block interactions */
-.shepherd-modal-overlay-container {
-    pointer-events: none !important;
-}
-
-.shepherd-modal-overlay-container .shepherd-modal-overlay {
-    pointer-events: none;
-}
-
-/* Highlight style for tour targets */
-.tour-highlight {
-    position: relative;
-    z-index: 9998;
-    box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.1);
-    border-radius: 4px;
-    pointer-events: auto !important;
-}
-
+/* Base Styles */
 .shepherd-element {
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
-    max-width: 280px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    max-width: 320px;
     font-family: 'Inter', sans-serif;
-    z-index: 10000;
-    background: white;
+    background: var(--bg-color);
     border: none;
-    padding: 5px;
-    transition: all 0.3s ease;
+    overflow: hidden;
+    transition: var(--transition);
+    z-index: 10000;
 }
 
-.shepherd-element:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
-}
-
+/* Header */
 .shepherd-header {
-    background: #4f46e5;
-    border-radius: 10px 10px 0 0;
-    padding: 1em;
+    background: var(--gradient);
+    padding: 1.25em 1.5em;
     position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 4px solid var(--accent-color);
 }
 
 .shepherd-title {
     color: white;
+    font-size: 1.1em;
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.3;
+}
+
+/* Content */
+.shepherd-text {
+    color: var(--text-color);
+    font-size: 0.95em;
+    line-height: 1.6;
+    padding: 1.8em 1.5em;
+    margin: 0;
+    background: linear-gradient(135deg, #f9fafb, #f3f4f6);
+    border-left: 4px solid var(--accent-color);
+    margin: 0 5px;
+    border-radius: 0 0 4px 4px;
+}
+
+/* Footer & Buttons */
+.shepherd-footer {
+    padding: 0 1.5em 1.5em;
+    display: flex;
+    justify-content: space-between;
+    background: transparent;
+    border: none;
+}
+
+.shepherd-button {
+    border-radius: 8px;
+    padding: 0.6em 1.2em;
+    font-size: 0.9em;
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    border: none;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    font-size: 0.85em;
+}
+
+.shepherd-button:not(.shepherd-button-primary) {
+    background: #b19bc5;
+    color: black;
+    border: 2px solid #e2e8f0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.shepherd-button:not(.shepherd-button-primary):hover {
+    background: #150d80;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border-color: #cbd5e1;
+}
+
+.shepherd-button-primary {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    font-weight: 700;
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(124, 58, 237, 0.3), 0 2px 4px -1px rgba(124, 58, 237, 0.2);
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.shepherd-button-primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+    opacity: 0;
+    z-index: -1;
+    transition: opacity 0.3s ease;
+}
+
+.shepherd-button-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+}
+
+.shepherd-button-primary:hover::before {
+    opacity: 1;
+}
+
+.shepherd-button:active {
+    transform: translateY(0) !important;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+    transition: all 0.1s ease;
+}
+
+/* Highlight */
+.tour-highlight {
+    position: relative;
+    z-index: 9998;
+    box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    pointer-events: auto !important;
+    transition: var(--transition);
+    animation: pulse 2s infinite;
+    border: 2px solid var(--accent-color);
+}
+
+/* Arrow */
+.shepherd-arrow {
+    border-width: 16px;
+}
+
+.shepherd-arrow:before {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-color: transparent;
+    border-style: solid;
+}
+
+/* Close Button */
+.shepherd-cancel-icon {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1.2em;
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.shepherd-cancel-icon:hover {
+    color: white;
+    transform: scale(1.1);
+}
+
+/* Step Counter */
+.shepherd-progress {
+    font-size: 0.8em;
+    color: var(--primary-color);
+    margin-top: 0.5em;
+    text-align: center;
+    padding: 0.5em 1.5em;
+    background: rgba(124, 58, 237, 0.1);
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+    font-weight: 600;
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from { 
+        opacity: 0; 
+        transform: translateY(10px) scale(0.98); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0) scale(1); 
+    }
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(124, 58, 237, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
+}
+
+.shepherd-element {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Celebration Animation */
+@keyframes confettiRain {
+    0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+}
+
+.confetti {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    background-color: #f00;
+    opacity: 0;
+    animation: confettiRain 3s ease-in-out infinite;
+}
+
+.shepherd-title {
+    color: rgb(9, 11, 175);
     font-weight: 600;
     margin: 0;
     font-size: 1.1em;
