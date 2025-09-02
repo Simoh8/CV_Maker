@@ -2,6 +2,130 @@ const $ = id => document.getElementById(id);
 const parseJSONorEmpty = s => { try {return JSON.parse(s)} catch {return []} }
 let activeTemplate = 'a';
 
+// M-Pesa Donation Modal
+const modal = document.getElementById('mpesaModal');
+const openModalBtn = document.getElementById('openDonateModal');
+const closeModalBtn = document.querySelector('.close');
+const donationForm = document.getElementById('donationForm');
+const statusMessage = document.getElementById('donationStatus');
+
+// Open modal when donate button is clicked
+if (openModalBtn) {
+    openModalBtn.addEventListener('click', () => {
+        modal.style.display = 'block';
+        setTimeout(() => {
+            modal.classList.add('show');
+        }, 10);
+    });
+}
+
+// Close modal when X is clicked
+if (closeModalBtn) {
+    closeModalBtn.addEventListener('click', () => {
+        closeModal();
+    });
+}
+
+// Close modal when clicking outside the modal content
+window.addEventListener('click', (e) => {
+    if (e.target === modal) {
+        closeModal();
+    }
+});
+
+// Handle form submission
+if (donationForm) {
+    donationForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const phoneNumber = document.getElementById('phoneNumber').value;
+        const amount = document.getElementById('amount').value;
+        
+        // Validate phone number (Kenyan format: 7XXXXXXXX)
+        if (!/^[0-9]{9}$/.test(phoneNumber)) {
+            showStatus('Please enter a valid M-Pesa number (e.g., 712345678)', 'error');
+            return;
+        }
+        
+        // Format phone number (add 254 and remove leading 0 if any)
+        const formattedPhone = `254${phoneNumber}`;
+        
+        // Show loading state
+        const submitBtn = document.getElementById('stkPushBtn');
+        const originalBtnText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        
+        try {
+            // In a real implementation, you would make an API call to your backend
+            // which would then call the M-Pesa STK Push API
+            const response = await simulateStkPush(formattedPhone, amount);
+            
+            if (response.success) {
+                showStatus('Payment request sent to your phone. Please check your M-Pesa menu to complete the payment.', 'success');
+                // Clear form and close modal after 5 seconds
+                setTimeout(() => {
+                    donationForm.reset();
+                    closeModal();
+                }, 5000);
+            } else {
+                throw new Error(response.message || 'Failed to initiate payment');
+            }
+        } catch (error) {
+            console.error('Payment error:', error);
+            showStatus(error.message || 'An error occurred while processing your payment. Please try again.', 'error');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+        }
+    });
+}
+
+// Simulate STK Push (replace with actual API call to your backend)
+async function simulateStkPush(phoneNumber, amount) {
+    // This is a simulation - in a real app, you would make an API call to your backend
+    // which would then call the M-Pesa STK Push API with proper authentication
+    console.log(`Simulating STK Push to ${phoneNumber} for KES ${amount}`);
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // For demo purposes, we'll return a success response
+    // In a real implementation, this would be the response from your backend
+    return {
+        success: true,
+        message: 'STK Push initiated successfully',
+        checkoutRequestID: 'ws_CO_0209202500000000000000000001',
+        merchantRequestID: '0000-0000000-00'
+    };
+}
+
+function showStatus(message, type = 'info') {
+    if (!statusMessage) return;
+    
+    statusMessage.textContent = message;
+    statusMessage.className = `status-message ${type}`;
+    
+    // Auto-hide success messages after 5 seconds
+    if (type === 'success') {
+        setTimeout(() => {
+            statusMessage.className = 'status-message';
+        }, 5000);
+    }
+}
+
+function closeModal() {
+    modal.classList.remove('show');
+    setTimeout(() => {
+        modal.style.display = 'none';
+        // Reset status message when closing modal
+        if (statusMessage) {
+            statusMessage.className = 'status-message';
+            statusMessage.textContent = '';
+        }
+    }, 300); // Match this with the CSS transition duration
+}
+
 // Initialize tab functionality
 document.querySelectorAll('.tab-button').forEach(button => {
     button.addEventListener('click', () => {
