@@ -310,24 +310,68 @@
 
 /* Style for the tour button in header */
 #startTour {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95em;
     display: flex;
     align-items: center;
-    gap: 0.5em;
-    padding: 0.5em 1em;
-    border-radius: 6px;
-    background: #f3f4f6;
-    border: 1px solid #e5e7eb;
-    color: #4b5563;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
+    gap: 8px;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 #startTour:hover {
-    background: #e5e7eb;
-    color: #1f2937;
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 
-#startTour i {
-    font-size: 1.1em;
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #startTour {
+        padding: 8px 12px;
+        font-size: 0.9em;
+    }
+    
+    #startTour i {
+        margin-right: 4px;
+    }
+}
+
+@media (max-width: 480px) {
+    #startTour {
+        padding: 8px 14px;
+        font-size: 0.85em;
+        width: auto;
+        height: auto;
+        border-radius: 8px;
+        display: inline-flex;
+    }
+    
+    #startTour i {
+        margin-right: 6px;
+        font-size: 1rem;
+    }
+    
+    .header > div {
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+    }
+    
+    .header h1 {
+        font-size: 1.4rem;
+        margin: 0;
+    }
+    
+    .header p {
+        font-size: 0.85rem;
+        margin: 4px 0 0 0;
+    }
 }
