@@ -1,4 +1,12 @@
 /* Shepherd.js Tour Styling */
+/* Celebration Animation */
+@keyframes fadeOut {
+    0% { opacity: 0; transform: scale(0.5); }
+    20% { opacity: 1; transform: scale(1.1); }
+    80% { opacity: 1; transform: scale(1.1); }
+    100% { opacity: 0; transform: scale(1.2); }
+}
+
 /* Make sure the tour doesn't block interactions */
 .shepherd-modal-overlay-container {
     pointer-events: none !important;

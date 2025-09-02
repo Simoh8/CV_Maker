@@ -254,6 +254,44 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
+    // Function to create celebration effect
+    function createCelebration() {
+        const container = document.createElement('div');
+        container.style.position = 'fixed';
+        container.style.top = '0';
+        container.style.left = '0';
+        container.style.width = '100%';
+        container.style.height = '100%';
+        container.style.pointerEvents = 'none';
+        container.style.zIndex = '99999';
+        container.style.display = 'flex';
+        container.style.justifyContent = 'center';
+        container.style.alignItems = 'center';
+        container.style.fontSize = '3rem';
+        container.style.animation = 'fadeOut 3s forwards';
+        
+        const emojis = ['🎉', '✨', '👏', '🥳', '🎊', '🌟', '💫', '🎈'];
+        const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+        
+        container.textContent = emoji.repeat(5) + ' Yay! ' + emoji.repeat(5);
+        document.body.appendChild(container);
+        
+        // Remove after animation
+        setTimeout(() => {
+            container.remove();
+        }, 3000);
+    }
+    
+    // Add celebration to the last step
+    const lastStep = tour.steps[tour.steps.length - 1];
+    const originalComplete = lastStep.options.buttons[1].action;
+    lastStep.options.buttons[1].action = function() {
+        // First complete the tour
+        originalComplete.call(this);
+        // Then show celebration
+        createCelebration();
+    };
+    
     // Start tour automatically on every visit
     setTimeout(() => {
         if (tour) {
