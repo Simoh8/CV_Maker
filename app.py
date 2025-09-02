@@ -419,6 +419,14 @@ def parse_file():
 
 @app.route('/')
 def index():
+    # Test if environment variables are loaded
+    print("\nEnvironment Variables:")
+    print(f"MPESA_ENV: {os.getenv('MPESA_ENVIRONMENT')}")
+    print(f"MPESA_CONSUMER_KEY: {os.getenv('MPESA_CONSUMER_KEY')}")
+    print(f"MPESA_CONSUMER_SECRET: {'*' * len(os.getenv('MPESA_CONSUMER_SECRET', ''))}")
+    print(f"MPESA_PASSKEY: {'*' * len(os.getenv('MPESA_PASSKEY', ''))}")
+    print(f"MPESA_SHORTCODE: {os.getenv('MPESA_SHORTCODE')}\n")
+    
     return send_from_directory('.', 'index.html')
 
 @app.route('/<path:path>')
@@ -442,13 +450,39 @@ def get_access_token():
     """Generate access token for M-Pesa API"""
     url = f"{base_url}/oauth/v1/generate?grant_type=client_credentials"
     auth = (MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET)
+    
+    # Debug: Print the credentials being used (remove in production)
+    print(f"Using M-Pesa Credentials:")
+    print(f"Consumer Key: {MPESA_CONSUMER_KEY}")
+    print(f"Consumer Secret: {'*' * len(MPESA_CONSUMER_SECRET) if MPESA_CONSUMER_SECRET else 'Not set'}")
+    print(f"Environment: {MPESA_ENV}")
+    print(f"Base URL: {base_url}")
+    
     try:
         response = requests.get(url, auth=auth, timeout=30)
+        print(f"Auth Response Status: {response.status_code}")
+        print(f"Auth Response: {response.text}")
+        
         response.raise_for_status()
-        return response.json().get('access_token')
-    except requests.exceptions.RequestException as e:
-        print(f"Error getting access token: {e}")
-        return None
+        token_data = response.json()
+        access_token = token_data.get('access_token')
+        
+        if not access_token:
+            print(f"No access token in response: {token_data}")
+            return None
+            
+        print(f"Successfully obtained access token")
+        return access_token
+        
+    except requests.exceptions.HTTPError as http_err:
+        print(f"HTTP Error: {http_err}")
+        if hasattr(http_err, 'response') and http_err.response:
+            print(f"Response Status: {http_err.response.status_code}")
+            print(f"Response Text: {http_err.response.text}")
+    except Exception as e:
+        print(f"Error getting access token: {type(e).__name__}: {str(e)}")
+        
+    return None
 
 def generate_password():
     """Generate password for M-Pesa API"""
@@ -474,30 +508,21 @@ def stk_push():
         # Format phone number (ensure it starts with 254)
         if phone.startswith('0'):
             phone = '254' + phone[1:]
-        elif phone.startswith('+'):
+        elif phone.startswith('+254'):
             phone = phone[1:]
         elif not phone.startswith('254'):
             phone = '254' + phone
-            
-        # Ensure amount is a valid number
-        try:
-            amount = int(float(amount))
-            if amount < 1:
-                raise ValueError("Amount must be at least 1 KES")
-        except (ValueError, TypeError):
-            return jsonify({
-                'success': False,
-                'message': 'Please enter a valid amount'
-            }), 400
-            
+
+        print(f"Formatted Phone: {phone}")
+
         # Get access token
+        print("\nGetting access token...")
         access_token = get_access_token()
         if not access_token:
-            return jsonify({
-                'success': False,
-                'message': 'Failed to authenticate with M-Pesa API'
-            }), 500
-            
+            error_msg = 'Failed to authenticate with M-Pesa'
+            print(f"Error: {error_msg}")
+            return jsonify({'error': error_msg}), 500
+
         # Prepare STK push request
         url = f"{base_url}/mpesa/stkpush/v1/processrequest"
         headers = {
@@ -509,42 +534,90 @@ def stk_push():
         password = base64.b64encode(f"{MPESA_SHORTCODE}{MPESA_PASSKEY}{timestamp}".encode()).decode()
         
         payload = {
-            "BusinessShortCode": MPESA_SHORTCODE,
-            "Password": password,
-            "Timestamp": timestamp,
-            "TransactionType": "CustomerPayBillOnline",
-            "Amount": amount,
-            "PartyA": phone,
-            "PartyB": MPESA_SHORTCODE,
-            "PhoneNumber": phone,
-            "CallBackURL": f"{request.host_url}api/mpesa/callback",
-            "AccountReference": "CVMAKER",
-            "TransactionDesc": "Donation for CV Maker"
+            'BusinessShortCode': MPESA_SHORTCODE,
+            'Password': password,
+            'Timestamp': timestamp,
+            'TransactionType': 'CustomerPayBillOnline',
+            'Amount': int(amount),
+            'PartyA': phone,
+            'PartyB': MPESA_SHORTCODE,
+            'PhoneNumber': phone,
+            'CallBackURL': 'https://cv-maker-free.onrender.com/api/mpesa/callback',
+            'AccountReference': 'CV Maker Donation',
+            'TransactionDesc': 'Donation for CV Maker'
         }
-        
+
+        print("\nSending STK Push with payload:")
+        print(f"URL: {url}")
+        print(f"Headers: {headers}")
+        print(f"Payload: {json.dumps(payload, indent=2)}")
+
         # Send STK push request
+        print("\nSending request to M-Pesa...")
         response = requests.post(url, json=payload, headers=headers, timeout=30)
-        response_data = response.json()
         
-        if response.status_code == 200 and 'ResponseCode' in response_data and response_data['ResponseCode'] == '0':
-            return jsonify({
-                'success': True,
-                'message': 'Payment request sent successfully. Please check your phone to complete the payment.',
-                'checkoutRequestID': response_data.get('CheckoutRequestID'),
-                'merchantRequestID': response_data.get('MerchantRequestID')
-            })
-        else:
-            error_message = response_data.get('errorMessage', 'Failed to initiate payment')
-            return jsonify({
-                'success': False,
-                'message': error_message
-            }), 400
+        print(f"\nM-Pesa Response:")
+        print(f"Status Code: {response.status_code}")
+        print(f"Response: {response.text}")
+        
+        try:
+            response_data = response.json()
+            print(f"Parsed Response: {json.dumps(response_data, indent=2)}")
             
-    except Exception as e:
-        print(f"STK Push Error: {str(e)}")
+            if response.status_code >= 400:
+                error_msg = response_data.get('errorMessage', 'Unknown error from M-Pesa')
+                print(f"M-Pesa Error: {error_msg}")
+                return jsonify({
+                    'error': 'Failed to initiate STK push',
+                    'details': error_msg,
+                    'response': response_data
+                }), response.status_code
+                
+            if response.status_code == 200 and 'ResponseCode' in response_data and response_data['ResponseCode'] == '0':
+                return jsonify({
+                    'success': True,
+                    'message': 'Payment request sent successfully. Please check your phone to complete the payment.',
+                    'checkoutRequestID': response_data.get('CheckoutRequestID'),
+                    'merchantRequestID': response_data.get('MerchantRequestID')
+                })
+            else:
+                error_message = response_data.get('errorMessage', 'Failed to initiate payment')
+                return jsonify({
+                    'success': False,
+                    'message': error_message
+                }), 400
+                
+        except ValueError:
+            print(f"Failed to parse JSON response: {response.text}")
+            return jsonify({
+                'error': 'Invalid response from M-Pesa',
+                'response': response.text
+            }), 500
+        
+    except requests.exceptions.RequestException as e:
+        error_msg = str(e)
+        if hasattr(e, 'response') and e.response:
+            error_msg = f"{e.response.status_code}: {e.response.text}"
+            print(f"Request Exception: {error_msg}")
+        else:
+            print(f"Request Exception: {error_msg}")
+        
         return jsonify({
             'success': False,
-            'message': 'An error occurred while processing your request. Please try again.'
+            'message': 'Failed to process payment request',
+            'details': error_msg
+        }), 500
+            
+    except Exception as e:
+        error_msg = str(e)
+        print(f"Unexpected Error: {error_msg}")
+        import traceback
+        traceback.print_exc()
+        
+        return jsonify({
+            'success': False,
+            'message': 'An unexpected error occurred while processing your request.',
+            'details': error_msg
         }), 500
 
 @app.route('/api/mpesa/callback', methods=['POST'])
