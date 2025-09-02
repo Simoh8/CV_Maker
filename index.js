@@ -336,8 +336,12 @@ document.getElementById('uploadBtn').addEventListener('click', async () => {
         }
         
         const json = await res.json();
-        fillFormFromJson(json);
-        updatePreview();
+        // Use setTimeout to ensure DOM is updated before updating preview
+        setTimeout(() => {
+            fillFormFromJson(json);
+            // Small delay to ensure all DOM updates are complete
+            setTimeout(updatePreview, 100);
+        }, 0);
         
         // Switch to create tab after successful upload
         document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
@@ -652,6 +656,12 @@ function fillFormFromJson(json) {
     $('github').value = json.personal?.github || '';
     $('linkedin').value = json.personal?.linkedin || '';
     
+    // Trigger input events to update any listeners
+    ['name', 'title', 'email', 'phone', 'github', 'linkedin'].forEach(id => {
+        const event = new Event('input', { bubbles: true });
+        $(id).dispatchEvent(event);
+    });
+    
     // Fill experience
     $('experienceEntries').innerHTML = '';
     if (json.experience && json.experience.length) {
@@ -673,6 +683,15 @@ function fillFormFromJson(json) {
                 </div>
             `;
             $('experienceEntries').insertAdjacentHTML('beforeend', entryHtml);
+            // Add event listeners to the new inputs
+            const expItem = $('experienceEntries').lastElementChild;
+            const expInputs = expItem.querySelectorAll('input, textarea');
+            expInputs.forEach(input => {
+                input.addEventListener('input', updatePreview);
+                // Trigger input event to update preview
+                const event = new Event('input', { bubbles: true });
+                input.dispatchEvent(event);
+            });
         });
     }
     
@@ -696,13 +715,33 @@ function fillFormFromJson(json) {
                 </div>
             `;
             $('educationEntries').insertAdjacentHTML('beforeend', entryHtml);
+            // Add event listeners to the new inputs
+            const eduItem = $('educationEntries').lastElementChild;
+            const eduInputs = eduItem.querySelectorAll('input');
+            eduInputs.forEach(input => {
+                input.addEventListener('input', updatePreview);
+                // Trigger input event to update preview
+                const event = new Event('input', { bubbles: true });
+                input.dispatchEvent(event);
+            });
         });
     }
     
-    // Fill skills
-    $('skills').value = (json.skills || []).join(', ');
-    $('softskills').value = (json.soft_skills || []).join(', ');
-    $('languages').value = (json.languages || []).join(', ');
+    // Fill skills and trigger input events
+    const skillsInputs = {
+        'skills': json.skills || [],
+        'softskills': json.soft_skills || [],
+        'languages': json.languages || []
+    };
+    
+    Object.entries(skillsInputs).forEach(([id, value]) => {
+        const element = $(id);
+        if (element) {
+            element.value = value.join(', ');
+            const event = new Event('input', { bubbles: true });
+            element.dispatchEvent(event);
+        }
+    });
     
     // Fill custom sections
     $('customEntries').innerHTML = '';
@@ -723,6 +762,15 @@ function fillFormFromJson(json) {
                 </div>
             `;
             $('customEntries').insertAdjacentHTML('beforeend', entryHtml);
+            // Add event listeners to the new inputs
+            const customItem = $('customEntries').lastElementChild;
+            const customInputs = customItem.querySelectorAll('input, textarea');
+            customInputs.forEach(input => {
+                input.addEventListener('input', updatePreview);
+                // Trigger input event to update preview
+                const event = new Event('input', { bubbles: true });
+                input.dispatchEvent(event);
+            });
         });
     }
     
@@ -734,13 +782,23 @@ function fillFormFromJson(json) {
     if (json.references && json.references.length) {
         json.references.forEach(ref => {
             if (ref.name) {  // Only add if there's a name
-                addReferenceEntry({
+                // Add reference and trigger preview update
+                const refEntry = addReferenceEntry({
                     name: ref.name || '',
                     position: ref.position || '',
                     company: ref.company || '',
                     phone: ref.phone || '',
                     email: ref.email || ''
                 });
+                
+                // Trigger input events for all reference inputs
+                if (refEntry) {
+                    const refInputs = refEntry.querySelectorAll('input');
+                    refInputs.forEach(input => {
+                        const event = new Event('input', { bubbles: true });
+                        input.dispatchEvent(event);
+                    });
+                }
             }
         });
     } else {
@@ -1036,60 +1094,51 @@ function updatePreview() {
     $('previewArea').innerHTML = html;
 }
 
-// Add reference entry
+// Function to add a new reference entry
+function addReferenceEntry(data = {}) {
+    const entryId = Date.now();
+    const entryHtml = `
+        <div class="entry-item" id="ref-${entryId}">
+            <h4><i class="fas fa-user-friends"></i> Reference Entry</h4>
+            <input type="text" placeholder="Name" class="ref-name" value="${data.name || ''}">
+            <input type="text" placeholder="Position" class="ref-position" value="${data.position || ''}">
+            <input type="text" placeholder="Company" class="ref-company" value="${data.company || ''}">
+            <input type="email" placeholder="Email" class="ref-email" value="${data.email || ''}">
+            <input type="tel" placeholder="Phone" class="ref-phone" value="${data.phone || ''}">
+            <div class="entry-actions">
+                <button type="button" class="small remove-btn remove-reference">
+                    <i class="fas fa-trash"></i> Remove
+                </button>
+            </div>
+        </div>
+    `;
+    $('referenceEntries').insertAdjacentHTML('beforeend', entryHtml);
+    
+    // Add event listeners to the new inputs
+    const newEntry = document.getElementById(`ref-${entryId}`);
+    newEntry.querySelectorAll('input').forEach(input => {
+        input.addEventListener('input', updatePreview);
+    });
+    
+    // Update preview immediately
+    updatePreview();
+    
+    return newEntry;
+}
+
+// Reference entry management
+$('addReference').addEventListener('click', () => {
+    addReferenceEntry();
+});
+
+// Handle remove reference button clicks
 document.addEventListener('click', e => {
-    if (e.target && (e.target.id === 'addReference' || e.target.closest('#addReference'))) {
-        e.preventDefault();
-        addReferenceEntry();
-    } else if (e.target && e.target.closest('.remove-reference')) {
+    if (e.target && e.target.closest('.remove-reference')) {
         e.preventDefault();
         e.target.closest('.entry-item').remove();
         updatePreview();
     }
 });
-
-function addReferenceEntry(data = {}) {
-    const container = $('referenceEntries');
-    const id = 'ref-' + Date.now();
-    const entry = document.createElement('div');
-    entry.className = 'entry-item';
-    entry.dataset.id = id;
-    entry.innerHTML = `
-        <div class="entry-header">
-            <span>Reference #${container.children.length + 1}</span>
-            <button type="button" class="remove-btn remove-reference">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="form-row">
-            <div class="form-group">
-                <input type="text" class="ref-name" placeholder="Name" value="${data.name || ''}">
-            </div>
-            <div class="form-group">
-                <input type="text" class="ref-position" placeholder="Position / Title" value="${data.position || ''}">
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="form-group">
-                <input type="text" class="ref-company" placeholder="Company" value="${data.company || ''}">
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="form-group">
-                <input type="tel" class="ref-phone" placeholder="Phone" value="${data.phone || ''}">
-            </div>
-            <div class="form-group">
-                <input type="email" class="ref-email" placeholder="Email" value="${data.email || ''}">
-            </div>
-        </div>
-    `;
-    container.appendChild(entry);
-    
-    // Add event listeners to update preview on input
-    entry.querySelectorAll('input').forEach(input => {
-        input.addEventListener('input', updatePreview);
-    });
-}
 
 // Add a default reference when the page loads
 document.addEventListener('DOMContentLoaded', () => {

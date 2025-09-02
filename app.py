@@ -419,13 +419,13 @@ def parse_file():
 
 @app.route('/')
 def index():
-    # Test if environment variables are loaded
-    print("\nEnvironment Variables:")
-    print(f"MPESA_ENV: {os.getenv('MPESA_ENVIRONMENT')}")
-    print(f"MPESA_CONSUMER_KEY: {os.getenv('MPESA_CONSUMER_KEY')}")
-    print(f"MPESA_CONSUMER_SECRET: {'*' * len(os.getenv('MPESA_CONSUMER_SECRET', ''))}")
-    print(f"MPESA_PASSKEY: {'*' * len(os.getenv('MPESA_PASSKEY', ''))}")
-    print(f"MPESA_SHORTCODE: {os.getenv('MPESA_SHORTCODE')}\n")
+    # # Test if environment variables are loaded
+    # print("\nEnvironment Variables:")
+    # print(f"MPESA_ENV: {os.getenv('MPESA_ENVIRONMENT')}")
+    # print(f"MPESA_CONSUMER_KEY: {os.getenv('MPESA_CONSUMER_KEY')}")
+    # print(f"MPESA_CONSUMER_SECRET: {'*' * len(os.getenv('MPESA_CONSUMER_SECRET', ''))}")
+    # print(f"MPESA_PASSKEY: {'*' * len(os.getenv('MPESA_PASSKEY', ''))}")
+    # print(f"MPESA_SHORTCODE: {os.getenv('MPESA_SHORTCODE')}\n")
     
     return send_from_directory('.', 'index.html')
 
@@ -451,17 +451,17 @@ def get_access_token():
     url = f"{base_url}/oauth/v1/generate?grant_type=client_credentials"
     auth = (MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET)
     
-    # Debug: Print the credentials being used (remove in production)
-    print(f"Using M-Pesa Credentials:")
-    print(f"Consumer Key: {MPESA_CONSUMER_KEY}")
-    print(f"Consumer Secret: {'*' * len(MPESA_CONSUMER_SECRET) if MPESA_CONSUMER_SECRET else 'Not set'}")
-    print(f"Environment: {MPESA_ENV}")
-    print(f"Base URL: {base_url}")
+    # # Debug: Print the credentials being used (remove in production)
+    # print(f"Using M-Pesa Credentials:")
+    # print(f"Consumer Key: {MPESA_CONSUMER_KEY}")
+    # print(f"Consumer Secret: {'*' * len(MPESA_CONSUMER_SECRET) if MPESA_CONSUMER_SECRET else 'Not set'}")
+    # print(f"Environment: {MPESA_ENV}")
+    # print(f"Base URL: {base_url}")
     
     try:
         response = requests.get(url, auth=auth, timeout=30)
-        print(f"Auth Response Status: {response.status_code}")
-        print(f"Auth Response: {response.text}")
+        # print(f"Auth Response Status: {response.status_code}")
+        # print(f"Auth Response: {response.text}")
         
         response.raise_for_status()
         token_data = response.json()
@@ -513,10 +513,10 @@ def stk_push():
         elif not phone.startswith('254'):
             phone = '254' + phone
 
-        print(f"Formatted Phone: {phone}")
+        # print(f"Formatted Phone: {phone}")
 
         # Get access token
-        print("\nGetting access token...")
+        # print("\nGetting access token...")
         access_token = get_access_token()
         if not access_token:
             error_msg = 'Failed to authenticate with M-Pesa'
@@ -547,26 +547,26 @@ def stk_push():
             'TransactionDesc': 'Donation for CV Maker'
         }
 
-        print("\nSending STK Push with payload:")
-        print(f"URL: {url}")
-        print(f"Headers: {headers}")
-        print(f"Payload: {json.dumps(payload, indent=2)}")
+        # print("\nSending STK Push with payload:")
+        # print(f"URL: {url}")
+        # print(f"Headers: {headers}")
+        # print(f"Payload: {json.dumps(payload, indent=2)}")
 
-        # Send STK push request
-        print("\nSending request to M-Pesa...")
+        # # Send STK push request
+        # print("\nSending request to M-Pesa...")
         response = requests.post(url, json=payload, headers=headers, timeout=30)
         
-        print(f"\nM-Pesa Response:")
-        print(f"Status Code: {response.status_code}")
-        print(f"Response: {response.text}")
+        # print(f"\nM-Pesa Response:")
+        # print(f"Status Code: {response.status_code}")
+        # print(f"Response: {response.text}")
         
         try:
             response_data = response.json()
-            print(f"Parsed Response: {json.dumps(response_data, indent=2)}")
+            # print(f"Parsed Response: {json.dumps(response_data, indent=2)}")
             
             if response.status_code >= 400:
                 error_msg = response_data.get('errorMessage', 'Unknown error from M-Pesa')
-                print(f"M-Pesa Error: {error_msg}")
+                # print(f"M-Pesa Error: {error_msg}")
                 return jsonify({
                     'error': 'Failed to initiate STK push',
                     'details': error_msg,
@@ -588,7 +588,7 @@ def stk_push():
                 }), 400
                 
         except ValueError:
-            print(f"Failed to parse JSON response: {response.text}")
+            # print(f"Failed to parse JSON response: {response.text}")
             return jsonify({
                 'error': 'Invalid response from M-Pesa',
                 'response': response.text
@@ -598,7 +598,7 @@ def stk_push():
         error_msg = str(e)
         if hasattr(e, 'response') and e.response:
             error_msg = f"{e.response.status_code}: {e.response.text}"
-            print(f"Request Exception: {error_msg}")
+            # print(f"Request Exception: {error_msg}")
         else:
             print(f"Request Exception: {error_msg}")
         
