@@ -135,13 +135,29 @@ function closeModal() {
 // Initialize tab functionality
 document.querySelectorAll('.tab-button').forEach(button => {
     button.addEventListener('click', () => {
-        // Remove active class from all buttons and content
-        document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        // Remove active class from all buttons and content in the same tab group
+        const tabGroup = button.closest('.tab-buttons');
+        if (tabGroup) {
+            tabGroup.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+            const contentId = button.getAttribute('data-tab') + '-tab';
+            const contentGroup = document.querySelector(`#${contentId}`)?.closest('.tab-container');
+            if (contentGroup) {
+                contentGroup.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            }
+        }
         
         // Add active class to clicked button and corresponding content
         button.classList.add('active');
-        $(`${button.dataset.tab}-tab`).classList.add('active');
+        const tabId = button.getAttribute('data-tab');
+        const content = document.getElementById(`${tabId}-tab`);
+        if (content) {
+            content.classList.add('active');
+            
+            // Initialize content if it's the references tab and empty
+            if (tabId === 'references' && $('referenceEntries').children.length === 0) {
+                $('addReference').click();
+            }
+        }
     });
 });
 
@@ -774,11 +790,9 @@ function fillFormFromJson(json) {
         });
     }
     
-    // Fill references
-    // Clear existing reference entries
+
     $('referenceEntries').innerHTML = '';
     
-    // Add reference entries from JSON
     if (json.references && json.references.length) {
         json.references.forEach(ref => {
             if (ref.name) {  // Only add if there's a name
@@ -791,7 +805,6 @@ function fillFormFromJson(json) {
                     email: ref.email || ''
                 });
                 
-                // Trigger input events for all reference inputs
                 if (refEntry) {
                     const refInputs = refEntry.querySelectorAll('input');
                     refInputs.forEach(input => {
@@ -1128,22 +1141,39 @@ function addReferenceEntry(data = {}) {
 
 // Reference entry management
 $('addReference').addEventListener('click', () => {
-    addReferenceEntry();
-});
-
-// Handle remove reference button clicks
-document.addEventListener('click', e => {
-    if (e.target && e.target.closest('.remove-reference')) {
-        e.preventDefault();
-        e.target.closest('.entry-item').remove();
-        updatePreview();
-    }
+    const entryId = Date.now();
+    const entryHtml = `
+        <div class="entry-item" id="ref-${entryId}">
+            <h4><i class="fas fa-user-friends"></i> Reference Entry</h4>
+            <input type="text" placeholder="Name" class="ref-name">
+            <input type="text" placeholder="Position" class="ref-position">
+            <input type="text" placeholder="Company" class="ref-company">
+            <input type="email" placeholder="Email" class="ref-email">
+            <input type="tel" placeholder="Phone" class="ref-phone">
+            <div class="entry-controls">
+                <button class="small btn-ghost" onclick="removeEntry('ref-${entryId}')">
+                    <i class="fas fa-trash"></i>
+                    Remove
+                </button>
+            </div>
+        </div>
+    `;
+    $('referenceEntries').insertAdjacentHTML('beforeend', entryHtml);
+    
+    // Add event listeners to the new inputs
+    const newEntry = document.getElementById(`ref-${entryId}`);
+    newEntry.querySelectorAll('input').forEach(input => {
+        input.addEventListener('input', updatePreview);
+    });
 });
 
 // Add a default reference when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    // Add one empty reference by default
-    addReferenceEntry();
+    // Add one empty reference by default if in the references tab
+    const referencesTab = document.querySelector('.tab-button[data-tab="references"]');
+    if (referencesTab && $('referenceEntries').children.length === 0) {
+        $('addReference').click();
+    }
 });
 
 // Initialize with empty form
